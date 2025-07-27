@@ -1,0 +1,10 @@
+[
+  {
+    "id": 1,
+    "employeeId": 1,
+    "period": "2024-01",
+    "grossSalary": 50000,
+    "netSalary": 40000,
+    "deductions": 10000
+  }
+]

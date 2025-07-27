@@ -1,0 +1,9 @@
+[
+  {
+    "id": 1,
+    "clientName": "Cliente Ejemplo",
+    "amount": 15000,
+    "status": "pending",
+    "date": "2024-01-15"
+  }
+]
