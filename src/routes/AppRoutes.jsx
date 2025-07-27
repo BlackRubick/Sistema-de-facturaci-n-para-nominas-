@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { BrowserRouter as Router } from 'react-router-dom';
 import { useAuthContext } from '../context/AuthContext';
+import { useAppContext } from '../context/AppContext';
 
 // Pages
 import Login from '../pages/Login';

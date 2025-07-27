@@ -1,19 +1,11 @@
 import React from 'react';
-import AppRoutes from './routes/AppRoutes';
-import { AuthContextProvider } from './context/AuthContext';
-import { AppContextProvider } from './context/AppContext';
-import './App.css';
-import './styles/globals.css';
 
 function App() {
   return (
-    <AppContextProvider>
-      <AuthContextProvider>
-        <div className="App">
-          <AppRoutes />
-        </div>
-      </AuthContextProvider>
-    </AppContextProvider>
+    <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+      <h1 style={{ color: '#3b82f6' }}>¡Sistema funcionando!</h1>
+      <p>Si ves este mensaje, la configuración básica está correcta.</p>
+    </div>
   );
 }
 
