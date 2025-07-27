@@ -4,13 +4,13 @@ Un sistema completo para la gestión de facturación y nóminas desarrollado con
 
 ## Características
 
-- 📊 Dashboard con métricas en tiempo real
-- 💰 Gestión de nóminas
-- 🧾 Sistema de facturación
-- 👥 Administración de empleados
-- 🔐 Sistema de autenticación
-- 📱 Diseño responsivo
-- 🎨 Interfaz moderna y intuitiva
+-  Dashboard con métricas en tiempo real
+-  Gestión de nóminas
+-  Sistema de facturación
+-  Administración de empleados
+-  Sistema de autenticación
+-  Diseño responsivo
+-  Interfaz moderna y intuitiva
 
 ## Estructura del Proyecto
 
@@ -65,20 +65,10 @@ sistema-facturacion-nominas/
 - **Date-fns** - Manejo de fechas
 - **UUID** - Generación de IDs únicos
 
-## Contribución
-
-1. Fork el proyecto
-2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
-3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Push a la rama (`git push origin feature/AmazingFeature`)
-5. Abre un Pull Request
 
 ## Licencia
 
 Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles.
 
-## Contacto
-
-Tu Nombre - tu.email@example.com
 
 Link del Proyecto: [https://github.com/tu-usuario/sistema-facturacion-nominas](https://github.com/tu-usuario/sistema-facturacion-nominas)
