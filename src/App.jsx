@@ -10,7 +10,8 @@ import './styles/components/sidebar.css';
 import './styles/components/header.css';
 import './styles/components/dashboard.css';
 import './styles/components/payroll.css';
-
+import './styles/components/employees.css'; 
+import './styles/components/billing.css';
 function App() {
   return (
     <AuthContextProvider>
