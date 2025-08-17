@@ -1,10 +1,11 @@
-// src/pages/billing/InvoiceCreate.jsx
+// src/pages/billing/InvoiceCreate.jsx - Actualizado con lista de CFDIs
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import { useAppContext } from '../../context/AppContext';
 import CFDIService from '../../services/cfdiService';
+import BillingService from '../../services/billingService';
 import '../../styles/components/billing.css';
 
 const InvoiceCreate = () => {
@@ -15,12 +16,15 @@ const InvoiceCreate = () => {
   const [loading, setLoading] = useState(false);
   const [clients, setClients] = useState([]);
   const [series, setSeries] = useState([]);
+  const [cfdiList, setCfdiList] = useState([]);
   const [loadingData, setLoadingData] = useState(true);
+  const [loadingCFDIs, setLoadingCFDIs] = useState(false);
 
   // Estado del formulario
   const [formData, setFormData] = useState({
     // Información del cliente
     clientId: '',
+    cfdiReference: '', // Nuevo campo para referenciar CFDI existente
     clientData: {
       name: '',
       rfc: '',
@@ -85,7 +89,7 @@ const InvoiceCreate = () => {
       // Validar configuración
       CFDIService.validateConfig();
       
-      // Cargar clientes y series en paralelo
+      // Cargar clientes, series y CFDIs en paralelo
       const [clientsResult, seriesResult] = await Promise.all([
         CFDIService.getClients().catch(() => ({ data: [] })),
         CFDIService.getSeries().catch(() => ({ data: [] }))
@@ -102,6 +106,9 @@ const InvoiceCreate = () => {
         }));
       }
 
+      // Cargar CFDIs recientes
+      await loadRecentCFDIs();
+
     } catch (error) {
       console.error('Error loading initial data:', error);
       addNotification({
@@ -110,6 +117,50 @@ const InvoiceCreate = () => {
       });
     } finally {
       setLoadingData(false);
+    }
+  };
+
+  const loadRecentCFDIs = async () => {
+    try {
+      setLoadingCFDIs(true);
+      
+      // Obtener CFDIs de los últimos 6 meses
+      const cfdiResult = await CFDIService.getRecentCFDIs(6);
+      
+      if (cfdiResult.data && Array.isArray(cfdiResult.data)) {
+        // Formatear CFDIs para el dropdown
+        const formattedCFDIs = cfdiResult.data.map(cfdi => 
+          CFDIService.formatCFDIForDropdown(cfdi)
+        );
+        setCfdiList(formattedCFDIs);
+      }
+    } catch (error) {
+      console.error('Error loading CFDIs:', error);
+      // No mostrar error al usuario ya que es información opcional
+      setCfdiList([]);
+    } finally {
+      setLoadingCFDIs(false);
+    }
+  };
+
+  const searchCFDIsByRFC = async (rfc) => {
+    if (!rfc || rfc.length < 12) return;
+    
+    try {
+      setLoadingCFDIs(true);
+      const result = await CFDIService.searchCFDIsByRFC(rfc);
+      
+      if (result.data && Array.isArray(result.data)) {
+        const formattedCFDIs = result.data.map(cfdi => 
+          CFDIService.formatCFDIForDropdown(cfdi)
+        );
+        setCfdiList(formattedCFDIs);
+      }
+    } catch (error) {
+      console.error('Error searching CFDIs:', error);
+      setCfdiList([]);
+    } finally {
+      setLoadingCFDIs(false);
     }
   };
 
@@ -150,6 +201,11 @@ const InvoiceCreate = () => {
         [field]: value
       }
     }));
+
+    // Si se cambia el RFC, buscar CFDIs relacionados
+    if (field === 'rfc' && value.length >= 12) {
+      searchCFDIsByRFC(value);
+    }
   };
 
   const handleItemChange = (itemId, field, value) => {
@@ -205,6 +261,11 @@ const InvoiceCreate = () => {
           cfdiUse: selectedClient.cfdi_use || 'G03'
         }
       }));
+
+      // Buscar CFDIs relacionados al RFC del cliente
+      if (selectedClient.rfc) {
+        searchCFDIsByRFC(selectedClient.rfc);
+      }
     } else {
       setFormData(prev => ({
         ...prev,
@@ -218,6 +279,33 @@ const InvoiceCreate = () => {
           fiscalRegime: '612',
           cfdiUse: 'G03'
         }
+      }));
+    }
+  };
+
+  const handleCFDIReference = (cfdiId) => {
+    const selectedCFDI = cfdiList.find(c => c.id === cfdiId);
+    if (selectedCFDI) {
+      // Llenar algunos campos basándose en el CFDI seleccionado
+      setFormData(prev => ({
+        ...prev,
+        cfdiReference: cfdiId,
+        clientData: {
+          ...prev.clientData,
+          name: selectedCFDI.receptor,
+          rfc: selectedCFDI.receptorRFC
+        },
+        notes: `Relacionado con CFDI: ${selectedCFDI.folio} - ${selectedCFDI.uuid}`
+      }));
+
+      addNotification({
+        type: 'info',
+        message: `CFDI referenciado: ${selectedCFDI.folio} por $${selectedCFDI.total.toLocaleString()}`
+      });
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        cfdiReference: cfdiId
       }));
     }
   };
@@ -316,6 +404,11 @@ const InvoiceCreate = () => {
         cfdiData.Draft = "1";
       }
 
+      // Agregar referencia a CFDI relacionado si existe
+      if (formData.cfdiReference) {
+        cfdiData.Relacionado = formData.cfdiReference;
+      }
+
       // Crear CFDI
       const result = await CFDIService.createCFDI(cfdiData);
 
@@ -380,20 +473,35 @@ const InvoiceCreate = () => {
           
           <div className="form-grid">
             <div className="input-group">
-              <label className="input-label">Cliente Existente</label>
+              <label className="input-label">
+                CFDI Relacionado (Opcional)
+                {loadingCFDIs && <span className="loading-text"> - Cargando...</span>}
+              </label>
               <select
-                value={formData.clientId}
-                onChange={(e) => handleClientSelect(e.target.value)}
+                value={formData.cfdiReference}
+                onChange={(e) => handleCFDIReference(e.target.value)}
                 className="input"
+                disabled={loadingCFDIs}
               >
-                <option value="">Seleccionar cliente existente...</option>
-                <option value="new">+ Crear nuevo cliente</option>
-                {clients.map(client => (
-                  <option key={client.id} value={client.id}>
-                    {client.name} - {client.rfc}
-                  </option>
-                ))}
+                <option value="">Sin referencia a CFDI existente</option>
+                {cfdiList.length > 0 ? (
+                  cfdiList.map(cfdi => (
+                    <option key={cfdi.id} value={cfdi.id}>
+                      {cfdi.displayText} - {cfdi.status}
+                    </option>
+                  ))
+                ) : (
+                  !loadingCFDIs && (
+                    <option value="" disabled>
+                      {formData.clientData.rfc ? 'No se encontraron CFDIs para este RFC' : 'Ingrese un RFC para buscar CFDIs'}
+                    </option>
+                  )
+                )}
               </select>
+              <span className="input-helper-text">
+                Seleccione un CFDI existente para establecer una relación. 
+                {cfdiList.length > 0 && ` (${cfdiList.length} CFDIs encontrados)`}
+              </span>
             </div>
           </div>
 
@@ -414,6 +522,7 @@ const InvoiceCreate = () => {
               onChange={(e) => handleClientDataChange('rfc', e.target.value.toUpperCase())}
               placeholder="RFC del cliente"
               required
+              helperText="Al ingresar el RFC se buscarán automáticamente los CFDIs relacionados"
             />
 
             <Input
@@ -496,6 +605,47 @@ const InvoiceCreate = () => {
               </select>
             </div>
           </div>
+
+          {/* Mostrar información del CFDI relacionado si está seleccionado */}
+          {formData.cfdiReference && (
+            <div className="cfdi-reference-info">
+              <h4>CFDI Relacionado Seleccionado</h4>
+              {(() => {
+                const selectedCFDI = cfdiList.find(c => c.id === formData.cfdiReference);
+                if (selectedCFDI) {
+                  return (
+                    <div className="cfdi-info-card">
+                      <div className="cfdi-info-row">
+                        <span className="label">Folio:</span>
+                        <span className="value">{selectedCFDI.folio}</span>
+                      </div>
+                      <div className="cfdi-info-row">
+                        <span className="label">UUID:</span>
+                        <span className="value">{selectedCFDI.uuid}</span>
+                      </div>
+                      <div className="cfdi-info-row">
+                        <span className="label">Receptor:</span>
+                        <span className="value">{selectedCFDI.receptor}</span>
+                      </div>
+                      <div className="cfdi-info-row">
+                        <span className="label">Total:</span>
+                        <span className="value">{formatCurrency(selectedCFDI.total)}</span>
+                      </div>
+                      <div className="cfdi-info-row">
+                        <span className="label">Estado:</span>
+                        <span className={`value status-${selectedCFDI.status}`}>{selectedCFDI.status}</span>
+                      </div>
+                      <div className="cfdi-info-row">
+                        <span className="label">Fecha:</span>
+                        <span className="value">{selectedCFDI.fechaTimbrado}</span>
+                      </div>
+                    </div>
+                  );
+                }
+                return <p>Cargando información del CFDI...</p>;
+              })()}
+            </div>
+          )}
         </div>
 
         {/* Información de la Factura */}

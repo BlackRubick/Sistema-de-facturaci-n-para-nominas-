@@ -1,10 +1,10 @@
-// src/services/cfdiService.js
+// src/services/cfdiService.js - Actualización para incluir listado de CFDIs
 class CFDIService {
   constructor() {
     // Configuración para sandbox o producción (sintaxis para Vite)
     this.baseURL = import.meta.env.VITE_FACTURA_ENV === 'sandbox' 
-      ? 'https://api.factura.com' 
-      : 'https://sandbox.factura.com/api';
+      ? 'https://sandbox.factura.com/api' 
+      : 'https://api.factura.com';
     
     this.apiKey = import.meta.env.VITE_FACTURA_API_KEY;
     this.secretKey = import.meta.env.VITE_FACTURA_SECRET_KEY;
@@ -18,6 +18,109 @@ class CFDIService {
       'F-Api-Key': this.apiKey,
       'F-Secret-Key': this.secretKey
     };
+  }
+
+  // Nuevo método: Listar CFDIs
+  async listCFDIs(filters = {}) {
+    try {
+      const payload = {
+        // Parámetros opcionales según la documentación
+        ...(filters.month && { month: filters.month }),
+        ...(filters.year && { year: filters.year }),
+        ...(filters.rfc && { rfc: filters.rfc }),
+        ...(filters.page && { page: filters.page }),
+        ...(filters.per_page && { per_page: filters.per_page })
+      };
+
+      const response = await fetch(`${this.baseURL}/v4/cfdi/list`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify(payload)
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Error al obtener lista de CFDIs');
+      }
+
+      return result;
+    } catch (error) {
+      console.error('Error listing CFDIs:', error);
+      throw error;
+    }
+  }
+
+  // Método auxiliar para obtener CFDIs con filtros específicos
+  async getCFDIsByDateRange(startDate, endDate, options = {}) {
+    try {
+      const startDateObj = new Date(startDate);
+      const endDateObj = new Date(endDate);
+      
+      const results = [];
+      let currentDate = new Date(startDateObj);
+      
+      while (currentDate <= endDateObj) {
+        const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+        const year = currentDate.getFullYear().toString();
+        
+        try {
+          const monthlyResult = await this.listCFDIs({
+            month,
+            year,
+            page: options.page || 1,
+            per_page: options.per_page || 100,
+            ...options
+          });
+          
+          if (monthlyResult.data && Array.isArray(monthlyResult.data)) {
+            results.push(...monthlyResult.data);
+          }
+        } catch (monthError) {
+          console.warn(`Error fetching CFDIs for ${month}/${year}:`, monthError);
+        }
+        
+        // Avanzar al siguiente mes
+        currentDate.setMonth(currentDate.getMonth() + 1);
+      }
+      
+      return {
+        data: results,
+        total: results.length
+      };
+    } catch (error) {
+      console.error('Error getting CFDIs by date range:', error);
+      throw error;
+    }
+  }
+
+  // Método para obtener CFDIs del último año
+  async getRecentCFDIs(months = 12) {
+    try {
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setMonth(startDate.getMonth() - months);
+      
+      return await this.getCFDIsByDateRange(startDate, endDate);
+    } catch (error) {
+      console.error('Error getting recent CFDIs:', error);
+      throw error;
+    }
+  }
+
+  // Método para buscar CFDIs por RFC específico
+  async searchCFDIsByRFC(rfc, options = {}) {
+    try {
+      return await this.listCFDIs({
+        rfc: rfc.toUpperCase(),
+        page: options.page || 1,
+        per_page: options.per_page || 100,
+        ...options
+      });
+    } catch (error) {
+      console.error('Error searching CFDIs by RFC:', error);
+      throw error;
+    }
   }
 
   // Crear CFDI
@@ -269,8 +372,23 @@ class CFDIService {
   // Validar configuración
   validateConfig() {
     if (!this.apiKey || !this.secretKey) {
-      throw new Error('Faltan credenciales de API. Verifique las variables de entorno REACT_APP_FACTURA_API_KEY y REACT_APP_FACTURA_SECRET_KEY');
+      throw new Error('Faltan credenciales de API. Verifique las variables de entorno VITE_FACTURA_API_KEY y VITE_FACTURA_SECRET_KEY');
     }
+  }
+
+  // Métodos auxiliares para formateo y manejo de datos
+  formatCFDIForDropdown(cfdi) {
+    return {
+      id: cfdi.UID,
+      uuid: cfdi.UUID,
+      folio: cfdi.Folio,
+      receptor: cfdi.RazonSocialReceptor,
+      receptorRFC: cfdi.Receptor,
+      total: parseFloat(cfdi.Total),
+      status: cfdi.Status,
+      fechaTimbrado: cfdi.FechaTimbrado,
+      displayText: `${cfdi.Folio} - ${cfdi.RazonSocialReceptor} - $${parseFloat(cfdi.Total).toLocaleString()}`
+    };
   }
 }
 
