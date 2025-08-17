@@ -1,265 +1,238 @@
+// src/pages/billing/BillingPage.jsx (Actualizada)
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Button from '../../components/common/Button';
 import Loading from '../../components/common/Loading';
 import { useAppContext } from '../../context/AppContext';
+import BillingService from '../../services/billingService';
+import CFDIService from '../../services/cfdiService';
 
 const BillingPage = () => {
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState({});
   const [filter, setFilter] = useState('todas');
   const [searchTerm, setSearchTerm] = useState('');
   const { addNotification } = useAppContext();
 
   useEffect(() => {
     loadInvoices();
-  }, []);
+  }, [filter, searchTerm]);
 
   const loadInvoices = async () => {
     try {
       setLoading(true);
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      const mockInvoices = [
-        {
-          id: 1,
-          number: 'FAC-001',
-          clientName: 'Empresa ABC C.A.',
-          clientRif: 'J-12345678-9',
-          clientEmail: 'contacto@empresaabc.com',
-          issueDate: '2024-01-15',
-          dueDate: '2024-02-15',
-          subtotal: 85000,
-          tax: 13600,
-          total: 98600,
-          status: 'pagada',
-          paymentDate: '2024-01-28',
-          items: [
-            { description: 'Desarrollo de aplicación web', quantity: 1, price: 50000 },
-            { description: 'Hosting y dominio anual', quantity: 1, price: 35000 }
-          ]
-        },
-        {
-          id: 2,
-          number: 'FAC-002',
-          clientName: 'Comercial XYZ S.R.L.',
-          clientRif: 'J-23456789-0',
-          clientEmail: 'admin@comercialxyz.com',
-          issueDate: '2024-01-20',
-          dueDate: '2024-02-20',
-          subtotal: 120000,
-          tax: 19200,
-          total: 139200,
-          status: 'pendiente',
-          paymentDate: null,
-          items: [
-            { description: 'Sistema de gestión de inventario', quantity: 1, price: 80000 },
-            { description: 'Capacitación del personal', quantity: 1, price: 40000 }
-          ]
-        },
-        {
-          id: 3,
-          number: 'FAC-003',
-          clientName: 'Servicios DEF C.A.',
-          clientRif: 'J-34567890-1',
-          clientEmail: 'facturacion@serviciosdef.com',
-          issueDate: '2024-01-25',
-          dueDate: '2024-02-25',
-          subtotal: 75000,
-          tax: 12000,
-          total: 87000,
-          status: 'vencida',
-          paymentDate: null,
-          items: [
-            { description: 'Consultoría en sistemas', quantity: 20, price: 3750 }
-          ]
-        },
-        {
-          id: 4,
-          number: 'FAC-004',
-          clientName: 'Industrias GHI S.A.',
-          clientRif: 'J-45678901-2',
-          clientEmail: 'compras@industriasghi.com',
-          issueDate: '2024-02-01',
-          dueDate: '2024-03-01',
-          subtotal: 200000,
-          tax: 32000,
-          total: 232000,
-          status: 'borrador',
-          paymentDate: null,
-          items: [
-            { description: 'Desarrollo de plataforma e-commerce', quantity: 1, price: 150000 },
-            { description: 'Integración con API de pagos', quantity: 1, price: 50000 }
-          ]
-        },
-        {
-          id: 5,
-          number: 'FAC-005',
-          clientName: 'Consultoría JKL C.A.',
-          clientRif: 'J-56789012-3',
-          clientEmail: 'info@consultoriajkl.com',
-          issueDate: '2024-02-05',
-          dueDate: '2024-03-05',
-          subtotal: 45000,
-          tax: 7200,
-          total: 52200,
-          status: 'enviada',
-          paymentDate: null,
-          items: [
-            { description: 'Mantenimiento de sitio web', quantity: 3, price: 15000 }
-          ]
-        }
-      ];
+      const filters = {
+        status: filter !== 'todas' ? filter : undefined,
+        search: searchTerm || undefined
+      };
       
-      setInvoices(mockInvoices);
+      const result = await BillingService.getInvoices(filters);
+      setInvoices(result.data || []);
     } catch (error) {
+      console.error('Error loading invoices:', error);
       addNotification({
         type: 'error',
-        message: 'Error al cargar facturas'
+        message: 'Error al cargar facturas: ' + error.message
       });
+      
+      // Fallback a datos mock si hay error de API
+      setInvoices([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredInvoices = invoices.filter(invoice => {
-    const matchesFilter = filter === 'todas' || invoice.status === filter;
-    const matchesSearch = invoice.number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         invoice.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         invoice.clientRif.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesFilter && matchesSearch;
-  });
+  const setItemLoading = (itemId, isLoading) => {
+    setActionLoading(prev => ({
+      ...prev,
+      [itemId]: isLoading
+    }));
+  };
 
-  const getStatusBadge = (status) => {
-    const statusConfig = {
-      'borrador': { class: 'status-draft', text: 'Borrador' },
-      'enviada': { class: 'status-sent', text: 'Enviada' },
-      'pagada': { class: 'status-paid', text: 'Pagada' },
-      'pendiente': { class: 'status-pending', text: 'Pendiente' },
-      'vencida': { class: 'status-overdue', text: 'Vencida' },
-      'cancelada': { class: 'status-cancelled', text: 'Cancelada' }
+  const handleCancelInvoice = async (invoice) => {
+    if (!invoice.uuid) {
+      addNotification({
+        type: 'error',
+        message: 'No se puede cancelar: UUID no disponible'
+      });
+      return;
+    }
+
+    const reasons = {
+      '01': 'Comprobante emitido con errores con relación',
+      '02': 'Comprobante emitido con errores sin relación',
+      '03': 'No se llevó a cabo la operación',
+      '04': 'Operación nominativa relacionada en una factura global'
     };
 
-    const config = statusConfig[status] || statusConfig['borrador'];
-    return <span className={`status-badge ${config.class}`}>{config.text}</span>;
+    const reason = window.prompt(
+      `Seleccione el motivo de cancelación:\n${Object.entries(reasons).map(([k, v]) => `${k}: ${v}`).join('\n')}\n\nIngrese el código (01-04):`,
+      '02'
+    );
+
+    if (!reason || !reasons[reason]) {
+      return;
+    }
+
+    if (!window.confirm(`¿Está seguro de cancelar la factura ${invoice.number}?`)) {
+      return;
+    }
+
+    try {
+      setItemLoading(invoice.id, true);
+      
+      await BillingService.cancelInvoice(invoice.uuid, reason);
+      
+      addNotification({
+        type: 'success',
+        message: 'Factura cancelada exitosamente'
+      });
+      
+      loadInvoices();
+    } catch (error) {
+      addNotification({
+        type: 'error',
+        message: 'Error al cancelar factura: ' + error.message
+      });
+    } finally {
+      setItemLoading(invoice.id, false);
+    }
+  };
+
+  const handleSendByEmail = async (invoice) => {
+    if (!invoice.uuid) {
+      addNotification({
+        type: 'error',
+        message: 'No se puede enviar: UUID no disponible'
+      });
+      return;
+    }
+
+    const email = window.prompt(
+      'Ingrese el email de destino:',
+      invoice.clientEmail
+    );
+
+    if (!email) {
+      return;
+    }
+
+    try {
+      setItemLoading(invoice.id, true);
+      
+      await BillingService.sendInvoiceByEmail(invoice.uuid, email);
+      
+      addNotification({
+        type: 'success',
+        message: `Factura enviada exitosamente a ${email}`
+      });
+    } catch (error) {
+      addNotification({
+        type: 'error',
+        message: 'Error al enviar factura: ' + error.message
+      });
+    } finally {
+      setItemLoading(invoice.id, false);
+    }
+  };
+
+  const handleDownloadPDF = async (invoice) => {
+    if (!invoice.uuid) {
+      addNotification({
+        type: 'error',
+        message: 'No se puede descargar: UUID no disponible'
+      });
+      return;
+    }
+
+    try {
+      setItemLoading(invoice.id, true);
+      
+      await BillingService.downloadInvoicePDF(invoice.uuid);
+      
+      addNotification({
+        type: 'success',
+        message: 'PDF descargado exitosamente'
+      });
+    } catch (error) {
+      addNotification({
+        type: 'error',
+        message: 'Error al descargar PDF: ' + error.message
+      });
+    } finally {
+      setItemLoading(invoice.id, false);
+    }
+  };
+
+  const handleDownloadXML = async (invoice) => {
+    if (!invoice.uuid) {
+      addNotification({
+        type: 'error',
+        message: 'No se puede descargar: UUID no disponible'
+      });
+      return;
+    }
+
+    try {
+      setItemLoading(invoice.id, true);
+      
+      await BillingService.downloadInvoiceXML(invoice.uuid);
+      
+      addNotification({
+        type: 'success',
+        message: 'XML descargado exitosamente'
+      });
+    } catch (error) {
+      addNotification({
+        type: 'error',
+        message: 'Error al descargar XML: ' + error.message
+      });
+    } finally {
+      setItemLoading(invoice.id, false);
+    }
+  };
+
+  const getStatusBadge = (status, satStatus) => {
+    const statusDisplay = BillingService.getStatusDisplay(status);
+    
+    return (
+      <div className="status-container">
+        <span className={`status-badge ${statusDisplay.class}`}>
+          {statusDisplay.text}
+        </span>
+        {satStatus && (
+          <small className="sat-status">
+            SAT: {satStatus === 'vigente' ? '✅ Vigente' : '❌ No vigente'}
+          </small>
+        )}
+      </div>
+    );
   };
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('es-VE', {
-      style: 'currency',
-      currency: 'VES',
-      minimumFractionDigits: 2
-    }).format(amount);
+    return BillingService.formatCurrency(amount);
   };
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('es-ES');
   };
 
-  const isOverdue = (dueDate, status) => {
-    if (status === 'pagada' || status === 'cancelada') return false;
-    return new Date(dueDate) < new Date();
-  };
-
-  const handleDeleteInvoice = async (id) => {
-    if (window.confirm('¿Está seguro de eliminar esta factura?')) {
-      try {
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        setInvoices(invoices.filter(inv => inv.id !== id));
-        addNotification({
-          type: 'success',
-          message: 'Factura eliminada exitosamente'
-        });
-      } catch (error) {
-        addNotification({
-          type: 'error',
-          message: 'Error al eliminar factura'
-        });
-      }
-    }
-  };
-
-  const handleDuplicateInvoice = async (id) => {
-    try {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      const original = invoices.find(inv => inv.id === id);
-      const duplicate = {
-        ...original,
-        id: invoices.length + 1,
-        number: `FAC-${String(invoices.length + 1).padStart(3, '0')}`,
-        issueDate: new Date().toISOString().split('T')[0],
-        dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        status: 'borrador',
-        paymentDate: null
-      };
-      
-      setInvoices([...invoices, duplicate]);
-      addNotification({
-        type: 'success',
-        message: 'Factura duplicada exitosamente'
-      });
-    } catch (error) {
-      addNotification({
-        type: 'error',
-        message: 'Error al duplicar factura'
-      });
-    }
-  };
-
-  const handleSendInvoice = async (id) => {
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setInvoices(invoices.map(inv => 
-        inv.id === id ? { ...inv, status: 'enviada' } : inv
-      ));
-      
-      addNotification({
-        type: 'success',
-        message: 'Factura enviada exitosamente'
-      });
-    } catch (error) {
-      addNotification({
-        type: 'error',
-        message: 'Error al enviar factura'
-      });
-    }
-  };
-
-  const handleMarkAsPaid = async (id) => {
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setInvoices(invoices.map(inv => 
-        inv.id === id ? { 
-          ...inv, 
-          status: 'pagada', 
-          paymentDate: new Date().toISOString().split('T')[0] 
-        } : inv
-      ));
-      
-      addNotification({
-        type: 'success',
-        message: 'Factura marcada como pagada'
-      });
-    } catch (error) {
-      addNotification({
-        type: 'error',
-        message: 'Error al actualizar estado'
-      });
-    }
-  };
-
   const calculateStats = () => {
-    const total = filteredInvoices.reduce((sum, inv) => sum + inv.total, 0);
-    const paid = filteredInvoices.filter(inv => inv.status === 'pagada').reduce((sum, inv) => sum + inv.total, 0);
-    const pending = filteredInvoices.filter(inv => inv.status === 'pendiente' || inv.status === 'enviada').reduce((sum, inv) => sum + inv.total, 0);
-    const overdue = filteredInvoices.filter(inv => inv.status === 'vencida').reduce((sum, inv) => sum + inv.total, 0);
+    const total = invoices.reduce((sum, inv) => sum + inv.total, 0);
+    const timbradas = invoices.filter(inv => inv.status === 'timbrada');
+    const borradores = invoices.filter(inv => inv.status === 'borrador');
+    const canceladas = invoices.filter(inv => inv.status === 'cancelada');
     
-    return { total, paid, pending, overdue };
+    return {
+      total: invoices.length,
+      totalAmount: total,
+      timbradas: timbradas.length,
+      timbradasAmount: timbradas.reduce((sum, inv) => sum + inv.total, 0),
+      borradores: borradores.length,
+      canceladas: canceladas.length
+    };
   };
 
   const stats = calculateStats();
@@ -272,8 +245,8 @@ const BillingPage = () => {
     <div className="billing-page">
       <div className="page-header">
         <div className="page-title-section">
-          <h1>Gestión de Facturación</h1>
-          <p>Administra todas las facturas y pagos</p>
+          <h1>Gestión de Facturación CFDI</h1>
+          <p>Administra todas las facturas electrónicas y CFDIs</p>
         </div>
         <div className="page-actions">
           <Link to="/clientes">
@@ -288,7 +261,7 @@ const BillingPage = () => {
           </Link>
           <Link to="/facturacion/crear">
             <Button variant="primary">
-              ➕ Nueva Factura
+              ➕ Nueva Factura CFDI
             </Button>
           </Link>
         </div>
@@ -298,7 +271,7 @@ const BillingPage = () => {
         <div className="search-filter">
           <input
             type="text"
-            placeholder="Buscar por número, cliente o RIF..."
+            placeholder="Buscar por número, cliente, RFC o UUID..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="search-input"
@@ -312,10 +285,9 @@ const BillingPage = () => {
           >
             <option value="todas">Todos los estados</option>
             <option value="borrador">Borradores</option>
+            <option value="timbrada">Timbradas</option>
             <option value="enviada">Enviadas</option>
-            <option value="pendiente">Pendientes</option>
             <option value="pagada">Pagadas</option>
-            <option value="vencida">Vencidas</option>
             <option value="cancelada">Canceladas</option>
           </select>
         </div>
@@ -324,23 +296,23 @@ const BillingPage = () => {
       <div className="billing-stats">
         <div className="stat-card stat-card-blue">
           <h3>Total Facturas</h3>
-          <p className="stat-value">{invoices.length}</p>
-          <p className="stat-amount">{formatCurrency(stats.total)}</p>
+          <p className="stat-value">{stats.total}</p>
+          <p className="stat-amount">{formatCurrency(stats.totalAmount)}</p>
         </div>
         <div className="stat-card stat-card-green">
-          <h3>Pagadas</h3>
-          <p className="stat-value">{invoices.filter(i => i.status === 'pagada').length}</p>
-          <p className="stat-amount">{formatCurrency(stats.paid)}</p>
+          <h3>Timbradas</h3>
+          <p className="stat-value">{stats.timbradas}</p>
+          <p className="stat-amount">{formatCurrency(stats.timbradasAmount)}</p>
         </div>
         <div className="stat-card stat-card-orange">
-          <h3>Pendientes</h3>
-          <p className="stat-value">{invoices.filter(i => i.status === 'pendiente' || i.status === 'enviada').length}</p>
-          <p className="stat-amount">{formatCurrency(stats.pending)}</p>
+          <h3>Borradores</h3>
+          <p className="stat-value">{stats.borradores}</p>
+          <p className="stat-amount">Pendientes de timbrar</p>
         </div>
         <div className="stat-card stat-card-red">
-          <h3>Vencidas</h3>
-          <p className="stat-value">{invoices.filter(i => i.status === 'vencida').length}</p>
-          <p className="stat-amount">{formatCurrency(stats.overdue)}</p>
+          <h3>Canceladas</h3>
+          <p className="stat-value">{stats.canceladas}</p>
+          <p className="stat-amount">Sin valor fiscal</p>
         </div>
       </div>
 
@@ -348,86 +320,122 @@ const BillingPage = () => {
         <table className="invoice-table">
           <thead>
             <tr>
-              <th>Número</th>
+              <th>Folio</th>
               <th>Cliente</th>
               <th>Fecha Emisión</th>
-              <th>Fecha Vencimiento</th>
               <th>Subtotal</th>
               <th>IVA</th>
               <th>Total</th>
               <th>Estado</th>
+              <th>UUID</th>
               <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
-            {filteredInvoices.length > 0 ? (
-              filteredInvoices.map((invoice) => (
-                <tr key={invoice.id} className={isOverdue(invoice.dueDate, invoice.status) ? 'row-overdue' : ''}>
+            {invoices.length > 0 ? (
+              invoices.map((invoice) => (
+                <tr key={invoice.id}>
                   <td>
                     <div className="invoice-number">
-                      <strong>{invoice.number}</strong>
+                      <strong>{invoice.serie}-{invoice.folio}</strong>
+                      <small>{invoice.number}</small>
                     </div>
                   </td>
                   <td>
                     <div className="client-cell">
                       <strong>{invoice.clientName}</strong>
-                      <small>{invoice.clientRif}</small>
+                      <small>{invoice.clientRfc}</small>
                     </div>
                   </td>
                   <td>{formatDate(invoice.issueDate)}</td>
-                  <td className={isOverdue(invoice.dueDate, invoice.status) ? 'text-error' : ''}>
-                    {formatDate(invoice.dueDate)}
-                    {isOverdue(invoice.dueDate, invoice.status) && (
-                      <small className="overdue-indicator">⚠️ Vencida</small>
-                    )}
-                  </td>
                   <td className="currency">{formatCurrency(invoice.subtotal)}</td>
                   <td className="currency">{formatCurrency(invoice.tax)}</td>
                   <td className="currency font-bold">{formatCurrency(invoice.total)}</td>
-                  <td>{getStatusBadge(invoice.status)}</td>
+                  <td>{getStatusBadge(invoice.status, invoice.satStatus)}</td>
+                  <td>
+                    <div className="uuid-cell">
+                      {invoice.uuid ? (
+                        <small className="uuid-text" title={invoice.uuid}>
+                          {invoice.uuid.substring(0, 8)}...
+                        </small>
+                      ) : (
+                        <small className="no-uuid">Sin UUID</small>
+                      )}
+                    </div>
+                  </td>
                   <td>
                     <div className="action-buttons">
-                      <Link to={`/facturacion/editar/${invoice.id}`}>
-                        <Button size="small" variant="outline" title="Editar">
-                          ✏️
+                      {/* Ver detalle */}
+                      <Link to={`/facturacion/detalle/${invoice.uuid || invoice.id}`}>
+                        <Button size="small" variant="outline" title="Ver detalle">
+                          👁️
                         </Button>
                       </Link>
-                      <Button 
-                        size="small" 
-                        variant="outline"
-                        onClick={() => handleDuplicateInvoice(invoice.id)}
-                        title="Duplicar"
-                      >
-                        📋
-                      </Button>
+
+                      {/* Editar solo borradores */}
                       {invoice.status === 'borrador' && (
+                        <Link to={`/facturacion/editar/${invoice.id}`}>
+                          <Button size="small" variant="outline" title="Editar">
+                            ✏️
+                          </Button>
+                        </Link>
+                      )}
+
+                      {/* Enviar por email */}
+                      {invoice.status === 'timbrada' && (
                         <Button 
                           size="small" 
                           variant="primary"
-                          onClick={() => handleSendInvoice(invoice.id)}
-                          title="Enviar"
+                          onClick={() => handleSendByEmail(invoice)}
+                          loading={actionLoading[invoice.id]}
+                          disabled={actionLoading[invoice.id]}
+                          title="Enviar por email"
                         >
                           📧
                         </Button>
                       )}
-                      {(invoice.status === 'enviada' || invoice.status === 'pendiente' || invoice.status === 'vencida') && (
+
+                      {/* Descargar PDF */}
+                      {invoice.uuid && invoice.status === 'timbrada' && (
                         <Button 
                           size="small" 
-                          variant="success"
-                          onClick={() => handleMarkAsPaid(invoice.id)}
-                          title="Marcar como pagada"
+                          variant="outline"
+                          onClick={() => handleDownloadPDF(invoice)}
+                          loading={actionLoading[invoice.id]}
+                          disabled={actionLoading[invoice.id]}
+                          title="Descargar PDF"
                         >
-                          ✅
+                          📄
                         </Button>
                       )}
-                      <Button 
-                        size="small" 
-                        variant="error"
-                        onClick={() => handleDeleteInvoice(invoice.id)}
-                        title="Eliminar"
-                      >
-                        🗑️
-                      </Button>
+
+                      {/* Descargar XML */}
+                      {invoice.uuid && invoice.status === 'timbrada' && (
+                        <Button 
+                          size="small" 
+                          variant="outline"
+                          onClick={() => handleDownloadXML(invoice)}
+                          loading={actionLoading[invoice.id]}
+                          disabled={actionLoading[invoice.id]}
+                          title="Descargar XML"
+                        >
+                          📑
+                        </Button>
+                      )}
+
+                      {/* Cancelar */}
+                      {(invoice.status === 'timbrada' || invoice.status === 'enviada') && (
+                        <Button 
+                          size="small" 
+                          variant="error"
+                          onClick={() => handleCancelInvoice(invoice)}
+                          loading={actionLoading[invoice.id]}
+                          disabled={actionLoading[invoice.id]}
+                          title="Cancelar CFDI"
+                        >
+                          ❌
+                        </Button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -447,27 +455,34 @@ const BillingPage = () => {
       </div>
 
       <div className="quick-actions-section">
-        <h3>Acciones Rápidas</h3>
+        <h3>Herramientas CFDI</h3>
         <div className="quick-actions-grid">
           <div className="quick-action-card">
-            <h4> Enviar Recordatorios</h4>
-            <p>Enviar recordatorios de pago a facturas vencidas</p>
+            <h4>🔍 Validar CFDI</h4>
+            <p>Verificar estatus de CFDIs en el SAT</p>
             <Button variant="outline" size="small">
-              Enviar Recordatorios
+              Validar CFDIs
             </Button>
           </div>
           <div className="quick-action-card">
-            <h4> Generar Reporte</h4>
-            <p>Crear reporte de facturación del período</p>
+            <h4>📊 Reporte de Ventas</h4>
+            <p>Generar reporte de facturación del período</p>
             <Button variant="outline" size="small">
               Generar Reporte
             </Button>
           </div>
           <div className="quick-action-card">
-            <h4> Exportar Datos</h4>
+            <h4>📤 Exportar Datos</h4>
             <p>Exportar facturas en formato Excel o PDF</p>
             <Button variant="outline" size="small">
               Exportar
+            </Button>
+          </div>
+          <div className="quick-action-card">
+            <h4>⚙️ Configurar Series</h4>
+            <p>Gestionar series y folios de facturación</p>
+            <Button variant="outline" size="small">
+              Configurar
             </Button>
           </div>
         </div>
