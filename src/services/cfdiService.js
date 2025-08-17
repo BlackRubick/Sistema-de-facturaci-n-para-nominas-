@@ -1,13 +1,13 @@
 // src/services/cfdiService.js
 class CFDIService {
   constructor() {
-    // Configuración para sandbox o producción
-    this.baseURL = process.env.REACT_APP_FACTURA_ENV === 'production' 
+    // Configuración para sandbox o producción (sintaxis para Vite)
+    this.baseURL = import.meta.env.VITE_FACTURA_ENV === 'sandbox' 
       ? 'https://api.factura.com' 
       : 'https://sandbox.factura.com/api';
     
-    this.apiKey = process.env.REACT_APP_FACTURA_API_KEY;
-    this.secretKey = process.env.REACT_APP_FACTURA_SECRET_KEY;
+    this.apiKey = import.meta.env.VITE_FACTURA_API_KEY;
+    this.secretKey = import.meta.env.VITE_FACTURA_SECRET_KEY;
     this.plugin = '9d4095c8f7ed5785cb14c0e3b033eeb8252416ed';
   }
 
