@@ -215,43 +215,56 @@ class CFDIService {
     }
   }
 
-  // Obtener PDF del CFDI
-  async getCFDIPDF(uuid) {
-    try {
-      const response = await fetch(`${this.baseURL}/cfdi/pdf/${uuid}`, {
-        method: "GET",
-        headers: this.getHeaders(),
-      });
+// Obtener PDF del CFDI
+async getCFDIPDF(uuid) {
+  try {
+    const response = await fetch(`${this.baseURL}/cfdi/pdf/${uuid}`, {
+      method: "GET",
+      headers: this.getHeaders(),
+    });
 
-      if (!response.ok) {
-        throw new Error("Error al obtener PDF");
-      }
-
-      return response.blob();
-    } catch (error) {
-      console.error("Error fetching PDF:", error);
-      throw error;
+    if (!response.ok) {
+      throw new Error("Error al obtener PDF");
     }
+
+    return response.blob();
+  } catch (error) {
+    console.error("Error fetching PDF:", error);
+    throw error;
   }
+}
 
-  // Obtener XML del CFDI
-  async getCFDIXML(uuid) {
-    try {
-      const response = await fetch(`${this.baseURL}/cfdi/xml/${uuid}`, {
-        method: "GET",
-        headers: this.getHeaders(),
-      });
+// Obtener XML del CFDI
+async getCFDIXML(uuid) {
+  try {
+    const response = await fetch(`${this.baseURL}/cfdi/xml/${uuid}`, {
+      method: "GET",
+      headers: this.getHeaders(),
+    });
 
-      if (!response.ok) {
-        throw new Error("Error al obtener XML");
-      }
-
-      return response.text();
-    } catch (error) {
-      console.error("Error fetching XML:", error);
-      throw error;
+    if (!response.ok) {
+      throw new Error("Error al obtener XML");
     }
+
+    return response.text();
+  } catch (error) {
+    console.error("Error fetching XML:", error);
+    throw error;
   }
+}
+
+// Función auxiliar para descargar archivos
+downloadFile(blob, filename) {
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.style.display = 'none';
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  window.URL.revokeObjectURL(url);
+  document.body.removeChild(a);
+}
 
   // === MÉTODOS DE CLIENTES (actualizados y ampliados) ===
 
