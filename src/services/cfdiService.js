@@ -1,23 +1,25 @@
-// src/services/cfdiService.js - Versión actualizada para usar proxy
+// src/services/cfdiService.js - Versión actualizada con nuevos métodos de clientes
 class CFDIService {
-constructor() {
-  // Cambiar de esto:
-  this.baseURL = '/api';
-  
-  // A esto:
-  this.baseURL = 'http://3.16.224.4:3001/api';
-  
-  // Mantener las variables para referencia, aunque el proxy maneje las credenciales
-  this.apiKey = import.meta.env.VITE_FACTURA_API_KEY;
-  this.secretKey = import.meta.env.VITE_FACTURA_SECRET_KEY;
-  this.plugin = "9d4095c8f7ed5785cb14c0e3b033eeb8252416ed";
-}
+  constructor() {
+    // Cambiar de esto:
+    this.baseURL = '/api';
+    
+    // A esto:
+    this.baseURL = 'http://3.16.224.4:3001/api';
+    
+    // Mantener las variables para referencia, aunque el proxy maneje las credenciales
+    this.apiKey = import.meta.env.VITE_FACTURA_API_KEY;
+    this.secretKey = import.meta.env.VITE_FACTURA_SECRET_KEY;
+    this.plugin = "9d4095c8f7ed5785cb14c0e3b033eeb8252416ed";
+  }
 
   getHeaders() {
     return {
       "Content-Type": "application/json"
     };
   }
+
+  // === MÉTODOS DE CFDI (mantenidos) ===
 
   // Nuevo método: Listar CFDIs
   async listCFDIs(filters = {}) {
@@ -145,67 +147,6 @@ constructor() {
     }
   }
 
-  // Crear cliente/receptor
-  async createClient(clientData) {
-    try {
-      const response = await fetch(`${this.baseURL}/clients`, {
-        method: "POST",
-        headers: this.getHeaders(),
-        body: JSON.stringify(clientData),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
-      return result;
-    } catch (error) {
-      console.error("Error creating client:", error);
-      throw error;
-    }
-  }
-
-  // Obtener lista de clientes
-  async getClients() {
-    try {
-      const response = await fetch(`${this.baseURL}/clients`, {
-        method: "GET",
-        headers: this.getHeaders(),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
-      return result;
-    } catch (error) {
-      console.error("Error fetching clients:", error);
-      throw error;
-    }
-  }
-
-  // Obtener series disponibles
-  async getSeries() {
-    try {
-      const response = await fetch(`${this.baseURL}/series`, {
-        method: "GET",
-        headers: this.getHeaders(),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
-      return result;
-    } catch (error) {
-      console.error("Error fetching series:", error);
-      throw error;
-    }
-  }
-
   // Obtener CFDI por ID
   async getCFDI(id) {
     try {
@@ -312,6 +253,174 @@ constructor() {
     }
   }
 
+  // === MÉTODOS DE CLIENTES (actualizados y ampliados) ===
+
+  // Obtener lista de clientes
+  async getClients() {
+    try {
+      const response = await fetch(`${this.baseURL}/clients`, {
+        method: "GET",
+        headers: this.getHeaders(),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error("Error fetching clients:", error);
+      throw error;
+    }
+  }
+
+  // Crear cliente/receptor
+  async createClient(clientData) {
+    try {
+      const response = await fetch(`${this.baseURL}/clients`, {
+        method: "POST",
+        headers: this.getHeaders(),
+        body: JSON.stringify(clientData),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error("Error creating client:", error);
+      throw error;
+    }
+  }
+
+  // NUEVO: Buscar cliente por RFC
+  async getClientByRFC(rfc) {
+    try {
+      const response = await fetch(`${this.baseURL}/clients/${rfc}`, {
+        method: "GET",
+        headers: this.getHeaders(),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error("Error fetching client by RFC:", error);
+      throw error;
+    }
+  }
+
+  // NUEVO: Buscar cliente por UID
+  async getClientByUID(uid) {
+    try {
+      const response = await fetch(`${this.baseURL}/clients/uid/${uid}`, {
+        method: "GET",
+        headers: this.getHeaders(),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error("Error fetching client by UID:", error);
+      throw error;
+    }
+  }
+
+  // NUEVO: Buscar clientes con RFC repetido
+  async getClientsByRFC(rfc) {
+    try {
+      const response = await fetch(`${this.baseURL}/clients/rfc/${rfc}`, {
+        method: "GET",
+        headers: this.getHeaders(),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error("Error fetching clients by RFC:", error);
+      throw error;
+    }
+  }
+
+  // NUEVO: Actualizar cliente
+  async updateClient(uid, clientData) {
+    try {
+      const response = await fetch(`${this.baseURL}/clients/${uid}`, {
+        method: "PUT",
+        headers: this.getHeaders(),
+        body: JSON.stringify(clientData),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error("Error updating client:", error);
+      throw error;
+    }
+  }
+
+  // NUEVO: Eliminar cliente
+  async deleteClient(uid) {
+    try {
+      const response = await fetch(`${this.baseURL}/clients/${uid}`, {
+        method: "DELETE",
+        headers: this.getHeaders(),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error("Error deleting client:", error);
+      throw error;
+    }
+  }
+
+  // === MÉTODOS DE SERIES (mantenidos) ===
+
+  // Obtener series disponibles
+  async getSeries() {
+    try {
+      const response = await fetch(`${this.baseURL}/series`, {
+        method: "GET",
+        headers: this.getHeaders(),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error("Error fetching series:", error);
+      throw error;
+    }
+  }
+
+  // === MÉTODOS AUXILIARES (mantenidos) ===
+
   // Transformar datos de factura interna a formato CFDI
   transformInvoiceToCFDI(invoice, client, series) {
     // Calcular totales
@@ -393,6 +502,34 @@ constructor() {
         cfdi.Total
       ).toLocaleString()}`,
     };
+  }
+
+  // NUEVO: Método auxiliar para formatear clientes para el dropdown
+  formatClientForDropdown(client) {
+    return {
+      id: client.uid || client.id,
+      name: client.name || client.RazonSocial,
+      rfc: client.rfc || client.RFC,
+      email: client.email || client.Contacto?.Email || '',
+      displayText: `${client.name || client.RazonSocial} - ${client.rfc || client.RFC}`
+    };
+  }
+
+  // NUEVO: Método auxiliar para buscar cliente con validación
+  async searchClient(searchTerm) {
+    try {
+      // Determinar si es RFC o UID
+      const isRFC = /^[A-Z&Ñ]{3,4}[0-9]{6}[A-V1-9][A-Z0-9][0-9]$/.test(searchTerm.toUpperCase());
+      
+      if (isRFC) {
+        return await this.getClientByRFC(searchTerm.toUpperCase());
+      } else {
+        return await this.getClientByUID(searchTerm);
+      }
+    } catch (error) {
+      console.error("Error searching client:", error);
+      throw error;
+    }
   }
 }
 
