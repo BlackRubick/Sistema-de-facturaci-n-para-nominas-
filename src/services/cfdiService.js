@@ -531,6 +531,143 @@ class CFDIService {
       throw error;
     }
   }
+
+
+// === MÉTODOS DE SERIES ACTUALIZADOS ===
+
+// Obtener series disponibles
+async getSeries() {
+  try {
+    const response = await fetch(`${this.baseURL}/series`, {
+      method: "GET",
+      headers: this.getHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error("Error fetching series:", error);
+    throw error;
+  }
+}
+
+// NUEVO: Obtener serie por UID
+async getSerieByUID(uid) {
+  try {
+    const response = await fetch(`${this.baseURL}/series/${uid}`, {
+      method: "GET",
+      headers: this.getHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error("Error fetching serie by UID:", error);
+    throw error;
+  }
+}
+
+// NUEVO: Crear serie
+async createSerie(serieData) {
+  try {
+    const response = await fetch(`${this.baseURL}/series`, {
+      method: "POST",
+      headers: this.getHeaders(),
+      body: JSON.stringify(serieData),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error("Error creating serie:", error);
+    throw error;
+  }
+}
+
+// NUEVO: Activar serie
+async activateSerie(uid) {
+  try {
+    const response = await fetch(`${this.baseURL}/series/${uid}/activate`, {
+      method: "POST",
+      headers: this.getHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error("Error activating serie:", error);
+    throw error;
+  }
+}
+
+// NUEVO: Desactivar serie
+async deactivateSerie(uid) {
+  try {
+    const response = await fetch(`${this.baseURL}/series/${uid}/deactivate`, {
+      method: "POST",
+      headers: this.getHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error("Error deactivating serie:", error);
+    throw error;
+  }
+}
+
+// NUEVO: Eliminar serie
+async deleteSerie(uid) {
+  try {
+    const response = await fetch(`${this.baseURL}/series/${uid}`, {
+      method: "DELETE",
+      headers: this.getHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error("Error deleting serie:", error);
+    throw error;
+  }
+}
+
+// NUEVO: Formatear serie para dropdown
+formatSerieForDropdown(serie) {
+  return {
+    id: serie.uid || serie.id,
+    name: serie.name,
+    type: serie.type,
+    description: serie.description,
+    status: serie.status,
+    displayText: `Serie ${serie.name} - ${serie.description} (${serie.status})`
+  };
+}
+
 }
 
 export default new CFDIService();
