@@ -592,7 +592,6 @@ const BillingPage = () => {
                       )}
                     </div>
                   </td>
-                  // Reemplaza la sección de botones de acción en tu BillingPage.jsx:
 
 <td>
   <div className="action-buttons">
