@@ -592,95 +592,97 @@ const BillingPage = () => {
                       )}
                     </div>
                   </td>
-                  <td>
-                    <div className="action-buttons">
-                      {/* Ver detalle */}
-                      <Link to={`/facturacion/detalle/${invoice.uuid || invoice.id}`}>
-                        <Button size="small" variant="outline" title="Ver detalle">
-                          👁️
-                        </Button>
-                      </Link>
+                  // Reemplaza la sección de botones de acción en tu BillingPage.jsx:
 
-                      {/* NUEVO: Ver PDF en nueva ventana */}
-                      {invoice.uuid && invoice.status === 'timbrada' && (
-                        <Button 
-                          size="small" 
-                          variant="outline"
-                          onClick={() => handleViewPDF(invoice)}
-                          loading={actionLoading[invoice.id]}
-                          disabled={actionLoading[invoice.id]}
-                          title="Ver PDF"
-                        >
-                          👁️📄
-                        </Button>
-                      )}
+<td>
+  <div className="action-buttons">
+    {/* Ver detalle */}
+    <Link to={`/facturacion/detalle/${invoice.uuid || invoice.id}`}>
+      <Button size="small" variant="outline" title="Ver detalle">
+        👁️
+      </Button>
+    </Link>
 
-                      {/* Editar solo borradores */}
-                      {invoice.status === 'borrador' && (
-                        <Link to={`/facturacion/editar/${invoice.id}`}>
-                          <Button size="small" variant="outline" title="Editar">
-                            ✏️
-                          </Button>
-                        </Link>
-                      )}
+    {/* Ver PDF en nueva ventana - ACTUALIZADO: incluye 'enviada' */}
+    {invoice.uuid && (invoice.status === 'timbrada' || invoice.status === 'enviada') && (
+      <Button 
+        size="small" 
+        variant="outline"
+        onClick={() => handleViewPDF(invoice)}
+        loading={actionLoading[invoice.id]}
+        disabled={actionLoading[invoice.id]}
+        title="Ver PDF"
+      >
+        👁️📄
+      </Button>
+    )}
 
-                      {/* Enviar por email */}
-                      {invoice.status === 'timbrada' && (
-                        <Button 
-                          size="small" 
-                          variant="primary"
-                          onClick={() => handleSendByEmail(invoice)}
-                          loading={actionLoading[invoice.id]}
-                          disabled={actionLoading[invoice.id]}
-                          title="Enviar por email"
-                        >
-                          📧
-                        </Button>
-                      )}
+    {/* Editar solo borradores */}
+    {invoice.status === 'borrador' && (
+      <Link to={`/facturacion/editar/${invoice.id}`}>
+        <Button size="small" variant="outline" title="Editar">
+          ✏️
+        </Button>
+      </Link>
+    )}
 
-                      {/* Descargar PDF */}
-                      {invoice.uuid && invoice.status === 'timbrada' && (
-                        <Button 
-                          size="small" 
-                          variant="outline"
-                          onClick={() => handleDownloadPDF(invoice)}
-                          loading={actionLoading[invoice.id]}
-                          disabled={actionLoading[invoice.id]}
-                          title="Descargar PDF"
-                        >
-                          📄
-                        </Button>
-                      )}
+    {/* Enviar por email - ACTUALIZADO: incluye 'enviada' */}
+    {(invoice.status === 'timbrada' || invoice.status === 'enviada') && (
+      <Button 
+        size="small" 
+        variant="primary"
+        onClick={() => handleSendByEmail(invoice)}
+        loading={actionLoading[invoice.id]}
+        disabled={actionLoading[invoice.id]}
+        title="Enviar por email"
+      >
+        📧
+      </Button>
+    )}
 
-                      {/* Descargar XML */}
-                      {invoice.uuid && invoice.status === 'timbrada' && (
-                        <Button 
-                          size="small" 
-                          variant="outline"
-                          onClick={() => handleDownloadXML(invoice)}
-                          loading={actionLoading[invoice.id]}
-                          disabled={actionLoading[invoice.id]}
-                          title="Descargar XML"
-                        >
-                          📑
-                        </Button>
-                      )}
+    {/* Descargar PDF - ACTUALIZADO: incluye 'enviada' */}
+    {invoice.uuid && (invoice.status === 'timbrada' || invoice.status === 'enviada') && (
+      <Button 
+        size="small" 
+        variant="outline"
+        onClick={() => handleDownloadPDF(invoice)}
+        loading={actionLoading[invoice.id]}
+        disabled={actionLoading[invoice.id]}
+        title="Descargar PDF"
+      >
+        📄
+      </Button>
+    )}
 
-                      {/* Cancelar */}
-                      {(invoice.status === 'timbrada' || invoice.status === 'enviada') && (
-                        <Button 
-                          size="small" 
-                          variant="error"
-                          onClick={() => handleCancelInvoice(invoice)}
-                          loading={actionLoading[invoice.id]}
-                          disabled={actionLoading[invoice.id]}
-                          title="Cancelar CFDI"
-                        >
-                          ❌
-                        </Button>
-                      )}
-                    </div>
-                  </td>
+    {/* Descargar XML - ACTUALIZADO: incluye 'enviada' */}
+    {invoice.uuid && (invoice.status === 'timbrada' || invoice.status === 'enviada') && (
+      <Button 
+        size="small" 
+        variant="outline"
+        onClick={() => handleDownloadXML(invoice)}
+        loading={actionLoading[invoice.id]}
+        disabled={actionLoading[invoice.id]}
+        title="Descargar XML"
+      >
+        📑
+      </Button>
+    )}
+
+    {/* Cancelar */}
+    {(invoice.status === 'timbrada' || invoice.status === 'enviada') && (
+      <Button 
+        size="small" 
+        variant="error"
+        onClick={() => handleCancelInvoice(invoice)}
+        loading={actionLoading[invoice.id]}
+        disabled={actionLoading[invoice.id]}
+        title="Cancelar CFDI"
+      >
+        ❌
+      </Button>
+    )}
+  </div>
+</td>
                 </tr>
               ))
             ) : (
