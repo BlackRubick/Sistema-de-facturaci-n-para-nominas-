@@ -595,12 +595,7 @@ const BillingPage = () => {
 
 <td>
   <div className="action-buttons">
-    {/* Ver detalle */}
-    <Link to={`/facturacion/detalle/${invoice.uuid || invoice.id}`}>
-      <Button size="small" variant="outline" title="Ver detalle">
-        👁️
-      </Button>
-    </Link>
+
 
     {/* Ver PDF en nueva ventana - ACTUALIZADO: incluye 'enviada' */}
     {invoice.uuid && (invoice.status === 'timbrada' || invoice.status === 'enviada') && (
