@@ -1,3 +1,4 @@
+// src/App.jsx - Actualizado con estilos de gastos
 import React from 'react';
 import { AuthContextProvider } from './context/AuthContext';
 import { AppContextProvider } from './context/AppContext';
@@ -12,6 +13,8 @@ import './styles/components/dashboard.css';
 import './styles/components/payroll.css';
 import './styles/components/employees.css'; 
 import './styles/components/billing.css';
+import './styles/components/gastos.css';
+
 function App() {
   return (
     <AuthContextProvider>

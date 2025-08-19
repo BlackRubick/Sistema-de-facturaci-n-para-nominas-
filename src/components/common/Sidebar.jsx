@@ -1,3 +1,4 @@
+// src/components/common/Sidebar.jsx - Actualizado con Gastos
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuthContext } from '../../context/AuthContext';
@@ -29,6 +30,17 @@ const menuItems = [
       { path: '/facturacion', name: 'Ver Facturas' },
       { path: '/facturacion/crear', name: 'Crear Factura' },
       { path: '/clientes', name: 'Clientes' },
+    ]
+  },
+  {
+    path: '/gastos',
+    name: 'Gastos',
+    icon: '💸',
+    submenu: [
+      { path: '/gastos', name: 'Ver Gastos' },
+      { path: '/gastos/crear', name: 'Nuevo Gasto' },
+      { path: '/gastos/categorias', name: 'Categorías' },
+      { path: '/gastos/reportes', name: 'Reportes' }
     ]
   },
   {

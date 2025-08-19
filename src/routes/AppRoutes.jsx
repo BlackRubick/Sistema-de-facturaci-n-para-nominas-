@@ -1,3 +1,4 @@
+// src/routes/AppRoutes.jsx - Actualizado con rutas de Gastos
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { BrowserRouter as Router } from 'react-router-dom';
@@ -21,6 +22,13 @@ import InvoiceCreate from '../pages/billing/InvoiceCreate';
 import InvoiceEdit from '../pages/billing/InvoiceEdit';
 import ClientsPage from '../pages/billing/ClientsPage';
 import BillingReports from '../pages/billing/BillingReports';
+
+// Gastos Pages
+import GastosPage from '../pages/gastos/GastosPage';
+import GastoCreate from '../pages/gastos/GastoCreate';
+import GastoEdit from '../pages/gastos/GastoEdit';
+import GastosCategorias from '../pages/gastos/GastosCategorias';
+import GastosReports from '../pages/gastos/GastosReports';
 
 // Employee Pages
 import EmployeePage from '../pages/employees/EmployeePage';
@@ -173,6 +181,47 @@ const AppRoutes = () => {
           <ProtectedRoute>
             <Layout>
               <BillingReports />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
+        {/* Gastos Routes */}
+        <Route path="/gastos" element={
+          <ProtectedRoute>
+            <Layout>
+              <GastosPage />
+            </Layout>
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/gastos/crear" element={
+          <ProtectedRoute>
+            <Layout>
+              <GastoCreate />
+            </Layout>
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/gastos/editar/:id" element={
+          <ProtectedRoute>
+            <Layout>
+              <GastoEdit />
+            </Layout>
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/gastos/categorias" element={
+          <ProtectedRoute>
+            <Layout>
+              <GastosCategorias />
+            </Layout>
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/gastos/reportes" element={
+          <ProtectedRoute>
+            <Layout>
+              <GastosReports />
             </Layout>
           </ProtectedRoute>
         } />
