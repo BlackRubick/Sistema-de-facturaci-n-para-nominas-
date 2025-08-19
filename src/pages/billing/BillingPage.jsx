@@ -1,4 +1,4 @@
-// src/pages/billing/BillingPage.jsx - Actualizada con lista real de CFDIs
+// src/pages/billing/BillingPage.jsx - Actualizada con descargas de PDF/XML
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Button from '../../components/common/Button';
@@ -263,6 +263,7 @@ const BillingPage = () => {
     }
   };
 
+  // FUNCIÓN ACTUALIZADA: Descargar PDF usando CFDIService
   const handleDownloadPDF = async (invoice) => {
     if (!invoice.uuid) {
       addNotification({
@@ -275,7 +276,20 @@ const BillingPage = () => {
     try {
       setItemLoading(invoice.id, true);
       
-      await BillingService.downloadInvoicePDF(invoice.uuid);
+      // Usar CFDIService en lugar de BillingService
+      const pdfBlob = await CFDIService.getCFDIPDF(invoice.uuid);
+      const filename = `CFDI_${invoice.number}.pdf`;
+      
+      // Crear URL y descargar
+      const url = window.URL.createObjectURL(pdfBlob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
       
       addNotification({
         type: 'success',
@@ -291,6 +305,7 @@ const BillingPage = () => {
     }
   };
 
+  // FUNCIÓN ACTUALIZADA: Descargar XML usando CFDIService
   const handleDownloadXML = async (invoice) => {
     if (!invoice.uuid) {
       addNotification({
@@ -303,7 +318,21 @@ const BillingPage = () => {
     try {
       setItemLoading(invoice.id, true);
       
-      await BillingService.downloadInvoiceXML(invoice.uuid);
+      // Usar CFDIService en lugar de BillingService
+      const xmlContent = await CFDIService.getCFDIXML(invoice.uuid);
+      const filename = `CFDI_${invoice.number}.xml`;
+      
+      // Crear blob para XML y descargar
+      const xmlBlob = new Blob([xmlContent], { type: 'application/xml' });
+      const url = window.URL.createObjectURL(xmlBlob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
       
       addNotification({
         type: 'success',
@@ -313,6 +342,44 @@ const BillingPage = () => {
       addNotification({
         type: 'error',
         message: 'Error al descargar XML: ' + error.message
+      });
+    } finally {
+      setItemLoading(invoice.id, false);
+    }
+  };
+
+  // NUEVA FUNCIÓN: Ver PDF en nueva ventana
+  const handleViewPDF = async (invoice) => {
+    if (!invoice.uuid) {
+      addNotification({
+        type: 'error',
+        message: 'No se puede ver: UUID no disponible'
+      });
+      return;
+    }
+
+    try {
+      setItemLoading(invoice.id, true);
+      
+      const pdfBlob = await CFDIService.getCFDIPDF(invoice.uuid);
+      const pdfUrl = window.URL.createObjectURL(pdfBlob);
+      
+      // Abrir en nueva ventana
+      window.open(pdfUrl, '_blank');
+      
+      // Limpiar URL después de un tiempo
+      setTimeout(() => {
+        window.URL.revokeObjectURL(pdfUrl);
+      }, 10000);
+      
+      addNotification({
+        type: 'success',
+        message: 'PDF abierto en nueva ventana'
+      });
+    } catch (error) {
+      addNotification({
+        type: 'error',
+        message: 'Error al abrir PDF: ' + error.message
       });
     } finally {
       setItemLoading(invoice.id, false);
@@ -533,6 +600,20 @@ const BillingPage = () => {
                           👁️
                         </Button>
                       </Link>
+
+                      {/* NUEVO: Ver PDF en nueva ventana */}
+                      {invoice.uuid && invoice.status === 'timbrada' && (
+                        <Button 
+                          size="small" 
+                          variant="outline"
+                          onClick={() => handleViewPDF(invoice)}
+                          loading={actionLoading[invoice.id]}
+                          disabled={actionLoading[invoice.id]}
+                          title="Ver PDF"
+                        >
+                          👁️📄
+                        </Button>
+                      )}
 
                       {/* Editar solo borradores */}
                       {invoice.status === 'borrador' && (
