@@ -29,7 +29,6 @@ const menuItems = [
       { path: '/facturacion', name: 'Ver Facturas' },
       { path: '/facturacion/crear', name: 'Crear Factura' },
       { path: '/clientes', name: 'Clientes' },
-      { path: '/facturacion/reportes', name: 'Reportes' }
     ]
   },
   {
